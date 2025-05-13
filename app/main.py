@@ -2,6 +2,7 @@ import logging.config
 from fastapi import FastAPI, Request
 from app.db.database import create_db_and_tables
 from app.routes import user, todo_list, task_status, task
+from app.routes.auth import router as auth_router
 import os
 
 # Logging
@@ -29,3 +30,4 @@ app.include_router(user.router)
 app.include_router(todo_list.router)
 app.include_router(task_status.router)
 app.include_router(task.router)
+app.include_router(auth_router)
