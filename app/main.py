@@ -1,25 +1,31 @@
-from fastapi import FastAPI
+import logging.config
+from fastapi import FastAPI, Request
 from app.db.database import create_db_and_tables
-from app.routes import user, todo_list, task, task_status
+from app.routes import user, todo_list, task_status, task
+import os
 
-app = FastAPI(
-    title="Todo List API",
-    description="API para gestión de tareas con usuarios, listas y estados.",
-    version="1.0.0"
-)
+# Logging
+logging.config.fileConfig('logging.conf', disable_existing_loggers=False)
+logger = logging.getLogger(__name__)
 
-# Inicializa la base de datos
+app = FastAPI(title="Task Manager API")
+
+# Iniciar base de datos
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
+    logger.info("Database initialized")
 
-# Rutas
-app.include_router(user.router, prefix="/users", tags=["Users"])
-app.include_router(todo_list.router, prefix="/lists", tags=["Todo Lists"])
-app.include_router(task.router, prefix="/tasks", tags=["Tasks"])
-app.include_router(task_status.router, prefix="/status", tags=["Task Status"])
+# Middleware para loggear cada petición
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"--> {request.method} {request.url.path}")
+    response = await call_next(request)
+    logger.info(f"<-- {request.method} {request.url.path} - {response.status_code}")
+    return response
 
-# Endpoint raíz
-@app.get("/")
-def read_root():
-    return {"message": "Bienvenido a la API de tareas"}
+# Routers
+app.include_router(user.router)
+app.include_router(todo_list.router)
+app.include_router(task_status.router)
+app.include_router(task.router)
